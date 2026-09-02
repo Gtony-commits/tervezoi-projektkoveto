@@ -16,6 +16,7 @@ import {
   Database,
   Filter,
   FolderKanban,
+  GitBranch,
   List,
   MessageSquare,
   MoreHorizontal,
@@ -43,6 +44,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PageComments } from '@/components/page-comments';
+import {
+  CommitmentTaskSuggestions,
+  DemoCredentialsNote,
+  initialReleases,
+  initialStateLog,
+  initialTeamMembers,
+  PlanningLogTab,
+  type ReleaseEntry,
+  type StateLogEntry,
+  TeamTab,
+  type TeamMember,
+} from '@/components/planner-addons';
 
 type ProjectState =
   | 'Nincs beállítva'
@@ -56,7 +69,9 @@ type ProjectState =
 type DetailTab =
   | 'áttekintés'
   | 'feladatok'
+  | 'csapat'
   | 'vállalás'
+  | 'napló'
   | 'pénzügy'
   | 'tevékenység';
 type Project = {
@@ -531,6 +546,10 @@ export function NinaPlanner() {
   const [comments, setComments] = useState<
     { who: string; when: string; text: string; icon: typeof MessageSquare }[]
   >([]);
+  const [teamMembers, setTeamMembers] =
+    useState<TeamMember[]>(initialTeamMembers);
+  const [stateLog, setStateLog] = useState<StateLogEntry[]>(initialStateLog);
+  const [releases, setReleases] = useState<ReleaseEntry[]>(initialReleases);
   const [toast, setToast] = useState('');
 
   const selected =
@@ -555,12 +574,45 @@ export function NinaPlanner() {
     window.setTimeout(() => setToast(''), 2500);
   };
   const updateProjectState = (state: ProjectState) => {
+    if (state === selected.state) return;
     setProjects((current) =>
       current.map((project) =>
         project.id === selected.id ? { ...project, state } : project,
       ),
     );
+    setStateLog((current) => [
+      {
+        id: `state-${Date.now()}`,
+        projectCode: selected.code,
+        projectName: selected.name,
+        from: selected.state,
+        to: state,
+        author: 'Demo felhasználó',
+        at: new Intl.DateTimeFormat('hu-HU', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date()),
+        note: 'Kézi állapotváltás a tervezői felületen.',
+      },
+      ...current,
+    ]);
     showToast(`Tervezési állapot: ${state}.`);
+  };
+  const updateProjectTeam = (team: string) => {
+    setProjects((current) =>
+      current.map((project) =>
+        project.id === selected.id ? { ...project, team } : project,
+      ),
+    );
+    showToast(`Csapat frissítve: ${team}.`);
+  };
+  const updateProjectMembers = (initials: string[]) => {
+    setProjects((current) =>
+      current.map((project) =>
+        project.id === selected.id ? { ...project, initials } : project,
+      ),
+    );
+    showToast('Projektcsapat frissítve.');
   };
   const toggleTask = (groupId: string, taskId: string, checked: boolean) =>
     setGroups((current) =>
@@ -629,6 +681,30 @@ export function NinaPlanner() {
     setTab('feladatok');
     showToast('A részfeladat hozzáadva.');
   };
+  const approveCommitmentTasks = (titles: string[]) => {
+    if (titles.length === 0) return;
+    setGroups((current) =>
+      current.map((group, index) =>
+        index === 0
+          ? {
+              ...group,
+              tasks: [
+                ...group.tasks,
+                ...titles.map((title) => ({
+                  id: `commitment-${Date.now()}-${title}`,
+                  title,
+                  due: 'Jóváhagyás után',
+                  owner: selected.initials[0] ?? 'T01',
+                  done: false,
+                })),
+              ],
+            }
+          : group,
+      ),
+    );
+    setTab('feladatok');
+    showToast(`${titles.length} vállalásból javasolt feladat hozzáadva.`);
+  };
   const addComment = () => {
     if (!comment.trim()) return;
     setComments((current) => [
@@ -659,6 +735,7 @@ export function NinaPlanner() {
               <h1 className="text-base font-bold sm:text-lg">
                 Tervezői projektkövető
               </h1>
+              <DemoCredentialsNote />
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -904,12 +981,20 @@ export function NinaPlanner() {
                   taskProgress={taskProgress}
                   taskDone={taskDone}
                   taskTotal={taskTotal}
+                  teamMembers={teamMembers}
+                  setTeamMembers={setTeamMembers}
+                  stateLog={stateLog}
+                  releases={releases}
+                  setReleases={setReleases}
                   comments={comments}
                   comment={comment}
                   setComment={setComment}
                   addComment={addComment}
                   onNewTask={() => setNewTaskOpen(true)}
                   onStateChange={updateProjectState}
+                  onProjectTeamChange={updateProjectTeam}
+                  onProjectMembersChange={updateProjectMembers}
+                  onApproveCommitmentTasks={approveCommitmentTasks}
                 />
               </div>
             ) : (
@@ -1089,12 +1174,20 @@ function ProjectDetail({
   taskProgress,
   taskDone,
   taskTotal,
+  teamMembers,
+  setTeamMembers,
+  stateLog,
+  releases,
+  setReleases,
   comments,
   comment,
   setComment,
   addComment,
   onNewTask,
   onStateChange,
+  onProjectTeamChange,
+  onProjectMembersChange,
+  onApproveCommitmentTasks,
 }: {
   project: Project;
   tab: DetailTab;
@@ -1106,6 +1199,11 @@ function ProjectDetail({
   taskProgress: number;
   taskDone: number;
   taskTotal: number;
+  teamMembers: TeamMember[];
+  setTeamMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
+  stateLog: StateLogEntry[];
+  releases: ReleaseEntry[];
+  setReleases: React.Dispatch<React.SetStateAction<ReleaseEntry[]>>;
   comments: {
     who: string;
     when: string;
@@ -1117,6 +1215,9 @@ function ProjectDetail({
   addComment: () => void;
   onNewTask: () => void;
   onStateChange: (state: ProjectState) => void;
+  onProjectTeamChange: (team: string) => void;
+  onProjectMembersChange: (initials: string[]) => void;
+  onApproveCommitmentTasks: (titles: string[]) => void;
 }) {
   const tabs: { value: DetailTab; label: string; icon: typeof Activity }[] = [
     { value: 'áttekintés', label: 'Áttekintés', icon: Activity },
@@ -1125,7 +1226,9 @@ function ProjectDetail({
       label: `Feladatok ${taskDone}/${taskTotal}`,
       icon: CheckCircle2,
     },
+    { value: 'csapat', label: 'Csapat', icon: Users },
     { value: 'vállalás', label: 'Vállalás', icon: ClipboardList },
+    { value: 'napló', label: 'Naplók', icon: GitBranch },
     { value: 'pénzügy', label: 'Pénzügy', icon: CircleDollarSign },
     { value: 'tevékenység', label: 'Tevékenység', icon: MessageSquare },
   ];
@@ -1206,7 +1309,32 @@ function ProjectDetail({
             onNewTask={onNewTask}
           />
         )}
-        {tab === 'vállalás' && <CommitmentTab project={project} />}
+        {tab === 'csapat' && (
+          <TeamTab
+            project={project}
+            members={teamMembers}
+            setMembers={setTeamMembers}
+            onProjectTeamChange={onProjectTeamChange}
+            onProjectMembersChange={onProjectMembersChange}
+          />
+        )}
+        {tab === 'vállalás' && (
+          <CommitmentTab
+            project={project}
+            existingTaskTitles={groups.flatMap((group) =>
+              group.tasks.map((task) => task.title),
+            )}
+            onApproveCommitmentTasks={onApproveCommitmentTasks}
+          />
+        )}
+        {tab === 'napló' && (
+          <PlanningLogTab
+            project={project}
+            stateLog={stateLog}
+            releases={releases}
+            setReleases={setReleases}
+          />
+        )}
         {tab === 'pénzügy' && <FinanceTab project={project} />}
         {tab === 'tevékenység' && (
           <ActivityTab
@@ -1471,7 +1599,15 @@ function TasksTab({
   );
 }
 
-function CommitmentTab({ project }: { project: Project }) {
+function CommitmentTab({
+  project,
+  existingTaskTitles,
+  onApproveCommitmentTasks,
+}: {
+  project: Project;
+  existingTaskTitles: string[];
+  onApproveCommitmentTasks: (titles: string[]) => void;
+}) {
   const columns = [
     {
       title: 'Tartalmazza',
@@ -1533,6 +1669,11 @@ function CommitmentTab({ project }: { project: Project }) {
           {commitmentContent.note}
         </p>
       </section>
+      <CommitmentTaskSuggestions
+        includedItems={commitmentContent.included}
+        existingTaskTitles={existingTaskTitles}
+        onApprove={onApproveCommitmentTasks}
+      />
     </div>
   );
 }

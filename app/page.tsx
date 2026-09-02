@@ -1,5 +1,10 @@
 import { NinaPlanner } from '@/components/nina-planner';
+import { LoginGate } from '@/components/planner-addons';
 
 export default function Home() {
-  return <NinaPlanner />;
+  return (
+    <LoginGate>
+      <NinaPlanner />
+    </LoginGate>
+  );
 }
