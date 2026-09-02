@@ -101,6 +101,8 @@ export function PageComments({
     if (!commentMode || !canvasRef.current) return;
     const target = event.target as HTMLElement;
     if (target.closest('[data-comment-control]')) return;
+    event.preventDefault();
+    event.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
     setPendingPoint({
       x: Math.min(
@@ -245,7 +247,7 @@ export function PageComments({
   return (
     <div
       ref={canvasRef}
-      onClick={placeComment}
+      onClickCapture={placeComment}
       className={`relative min-h-screen ${commentMode ? 'cursor-crosshair' : ''}`}
     >
       {children}
