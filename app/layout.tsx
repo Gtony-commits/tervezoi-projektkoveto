@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    'https://nina-tervezoi-projektkoveto.rpzxpjjtn8.chatgpt.site',
+    'https://tervezoi-projektkoveto-demo.rpzxpjjtn8.chatgpt.site',
   ),
   title: 'Tervezői projektkövető',
   description: 'Tervezői projektek, feladatok és határidők kezelése.',
