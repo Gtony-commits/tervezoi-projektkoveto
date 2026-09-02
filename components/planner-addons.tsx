@@ -88,7 +88,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'PM',
     team: 'B csapat',
     discipline: 'Erősáram',
-    permissions: 'Projekt létrehozás, kiadás jóváhagyás',
+    permissions: 'V, Vn',
     capacity: 72,
     status: 'Terhelt',
   },
@@ -110,7 +110,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező gyakornok',
     team: 'B csapat',
     discipline: 'Dokumentáció',
-    permissions: 'Dokumentáció szerkesztés',
+    permissions: 'Vn',
     capacity: 64,
     status: 'Szabad',
   },
@@ -121,7 +121,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező',
     team: 'A csapat',
     discipline: 'Villámvédelem',
-    permissions: 'Ellenőrzés, státusz módosítás',
+    permissions: 'V',
     capacity: 81,
     status: 'Foglalt',
   },
@@ -132,7 +132,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező',
     team: 'C csapat',
     discipline: 'Elosztók',
-    permissions: 'Feladat szerkesztés, kiadás előkészítés',
+    permissions: 'V, Vn',
     capacity: 45,
     status: 'Szabad',
   },
@@ -143,7 +143,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'PM',
     team: 'Közös',
     discipline: 'Minőségellenőrzés',
-    permissions: 'Ellenőrzés, kiadás zárolás',
+    permissions: 'V',
     capacity: 69,
     status: 'Terhelt',
   },
@@ -522,9 +522,7 @@ export function DesignersDirectory({
   const [newRole, setNewRole] = useState<TeamRole>(
     'Épületvillamossági tervező',
   );
-  const [newPermissions, setNewPermissions] = useState(
-    'Feladat szerkesztés, kommentelés',
-  );
+  const [newPermissions, setNewPermissions] = useState('');
 
   const updateMember = (id: string, patch: Partial<TeamMember>) =>
     setMembers((current) =>
@@ -609,10 +607,12 @@ export function DesignersDirectory({
           </label>
           <label className="grid gap-1.5 text-xs font-bold">
             Kamarai szám
-            <Textarea
+            <Input
               value={newPermissions}
               onChange={(event) => setNewPermissions(event.target.value)}
-              className="min-h-5 font-normal"
+              placeholder="V, Vn"
+              maxLength={16}
+              className="h-9 w-28 font-normal"
             />
           </label>
           <Button
@@ -715,14 +715,16 @@ function EditableMemberRow({
           className="h-8 text-xs font-semibold"
         />
       </label>
-      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground sm:col-span-3">
-        Jogosultságok
-        <Textarea
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Kamarai szám
+        <Input
           value={member.permissions}
           onChange={(event) =>
             updateMember(member.id, { permissions: event.target.value })
           }
-          className="min-h-16 text-xs font-semibold"
+          placeholder="V, Vn"
+          maxLength={16}
+          className="h-8 w-28 text-xs font-semibold"
         />
       </label>
       <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground sm:col-span-2">
