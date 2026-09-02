@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { PageComments } from '@/components/page-comments';
 
 type ProjectState =
   | 'Előkészíthető'
@@ -575,426 +576,434 @@ export function NinaPlanner() {
     setTab('áttekintés');
   };
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
-      <div>
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur-xl sm:px-6">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.16em] text-muted-foreground">
-              Tervezés
-            </p>
-            <h1 className="text-base font-bold sm:text-lg">
-              Tervezői projektkövető
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => showToast('Nincs új értesítés.')}
-              aria-label="Értesítések"
-            >
-              <Bell />
-            </Button>
-            <Button onClick={() => setNewProjectOpen(true)}>
-              <Plus />
-              <span className="hidden sm:inline">Új projekt</span>
-            </Button>
-          </div>
-        </header>
-        <section className="border-b border-border bg-card/20 px-3 py-4 sm:px-6">
-          <div className="mx-auto max-w-[1640px]">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-black tracking-tight sm:text-2xl">
-                  Futó tervezési projektek
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                  Projektállapot, részfeladatok és pénzügy egy közös
-                  munkafelületen.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setNewProjectName('Új sablonprojekt');
-                    setNewProjectClient('Partner –');
-                    setNewProjectOpen(true);
-                  }}
-                >
-                  <Zap /> Sablonból
-                </Button>
-                <Button variant="outline" onClick={() => setNewTaskOpen(true)}>
-                  <Plus /> Részfeladat
-                </Button>
-              </div>
+    <PageComments pageKey={`${view}:${selected.code}:${tab}`}>
+      <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
+        <div>
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur-xl sm:px-6">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.16em] text-muted-foreground">
+                Tervezés
+              </p>
+              <h1 className="text-base font-bold sm:text-lg">
+                Tervezői projektkövető
+              </h1>
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                icon={FolderKanban}
-                label="Aktív projektek"
-                value="18"
-                note="3 új ebben a hónapban"
-                tone="#48d7a4"
-              />
-              <StatCard
-                icon={AlertTriangle}
-                label="Figyelmet igényel"
-                value="5"
-                note="2 lejárt, 3 kockázatos"
-                tone="#f0786c"
-              />
-              <StatCard
-                icon={CheckCircle2}
-                label="E havi kiadás"
-                value="7"
-                note="4 projekt terv szerint"
-                tone="#62a4ff"
-              />
-              <StatCard
-                icon={CircleDollarSign}
-                label="Számlázható"
-                value="3"
-                note="1 TIG jóváhagyásra vár"
-                tone="#c9f257"
-              />
-            </div>
-          </div>
-        </section>
-        <section className="mx-auto max-w-[1640px] px-3 py-4 sm:px-6">
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-              <label className="flex h-9 min-w-0 max-w-md flex-1 items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm">
-                <Search className="size-4 shrink-0 text-muted-foreground" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-                  placeholder="Projekt, projektszám vagy partner…"
-                />
-                {query && (
-                  <button
-                    onClick={() => setQuery('')}
-                    aria-label="Keresés törlése"
-                  >
-                    <X className="size-3.5 text-muted-foreground" />
-                  </button>
-                )}
-              </label>
-              <label className="relative flex items-center">
-                <Filter className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground" />
-                <select
-                  value={teamFilter}
-                  onChange={(event) => setTeamFilter(event.target.value)}
-                  className="h-9 appearance-none rounded-lg border border-input bg-card pl-8 pr-8 text-xs font-semibold outline-none focus:border-ring"
-                >
-                  <option>Minden csapat</option>
-                  <option>A csapat</option>
-                  <option>B csapat</option>
-                  <option>C csapat</option>
-                  <option>Közös</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground" />
-              </label>
-              <label className="relative flex items-center">
-                <SlidersHorizontal className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground" />
-                <select
-                  value={stateFilter}
-                  onChange={(event) => setStateFilter(event.target.value)}
-                  className="h-9 appearance-none rounded-lg border border-input bg-card pl-8 pr-8 text-xs font-semibold outline-none focus:border-ring"
-                >
-                  <option>Minden állapot</option>
-                  <option>Előkészíthető</option>
-                  <option>Folyamatban</option>
-                  <option>Módosítandó</option>
-                  <option>Kiviteli kiadva</option>
-                  <option>Kész</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground" />
-              </label>
-            </div>
-            <div className="flex rounded-lg border border-input bg-card p-1">
-              <button
-                onClick={() => setView('list')}
-                className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold ${view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => showToast('Nincs új értesítés.')}
+                aria-label="Értesítések"
               >
-                <List className="size-3.5" />
-                Lista
-              </button>
-              <button
-                onClick={() => setView('board')}
-                className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold ${view === 'board' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                <Columns3 className="size-3.5" />
-                Tábla
-              </button>
+                <Bell />
+              </Button>
+              <Button onClick={() => setNewProjectOpen(true)}>
+                <Plus />
+                <span className="hidden sm:inline">Új projekt</span>
+              </Button>
             </div>
-          </div>
-          {view === 'list' ? (
-            <div className="grid min-h-[680px] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_18px_50px_rgb(0_0_0/12%)] xl:grid-cols-[440px_minmax(0,1fr)]">
-              <div className="border-b border-border xl:border-b-0 xl:border-r">
-                <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                  <div>
-                    <h3 className="text-sm font-bold">Projektek</h3>
-                    <p className="text-[11px] text-muted-foreground">
-                      {filtered.length} találat
-                    </p>
-                  </div>
+          </header>
+          <section className="border-b border-border bg-card/20 px-3 py-4 sm:px-6">
+            <div className="mx-auto max-w-[1640px]">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black tracking-tight sm:text-2xl">
+                    Futó tervezési projektek
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                    Projektállapot, részfeladatok és pénzügy egy közös
+                    munkafelületen.
+                  </p>
+                </div>
+                <div className="flex gap-2">
                   <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() =>
-                      showToast('Rendezés: legközelebbi határidő.')
-                    }
-                    aria-label="Projektek rendezése"
+                    variant="outline"
+                    onClick={() => {
+                      setNewProjectName('Új sablonprojekt');
+                      setNewProjectClient('Partner –');
+                      setNewProjectOpen(true);
+                    }}
                   >
-                    <MoreHorizontal />
+                    <Zap /> Sablonból
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setNewTaskOpen(true)}
+                  >
+                    <Plus /> Részfeladat
                   </Button>
                 </div>
-                <div className="max-h-[700px] space-y-1 overflow-y-auto p-2 nina-scroll">
-                  {filtered.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => selectProject(project.id)}
-                      className={`group relative w-full overflow-hidden rounded-xl border p-3 text-left transition-all ${selected.id === project.id ? 'border-primary/60 bg-primary/[.07]' : 'border-transparent hover:border-border hover:bg-muted/30'}`}
-                    >
-                      <span
-                        className="absolute inset-y-3 left-0 w-0.5 rounded-r"
-                        style={{
-                          backgroundColor:
-                            selected.id === project.id
-                              ? project.color
-                              : 'transparent',
-                        }}
-                      />
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold">
-                            {project.name}
-                          </p>
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            {project.code} · {project.team}
-                          </p>
-                        </div>
-                        <AvatarStack initials={project.initials} limit={3} />
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${project.progress}%`,
-                              backgroundColor: project.color,
-                            }}
-                          />
-                        </div>
-                        <span className="w-7 text-right text-[10px] font-bold text-muted-foreground">
-                          {project.progress}%
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${stateTone[project.state]}`}
-                        >
-                          {project.state}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
-                          <Clock3 className="size-3" />
-                          {project.due}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                  {filtered.length === 0 && (
-                    <div className="grid min-h-56 place-items-center px-8 text-center">
-                      <div>
-                        <Search className="mx-auto mb-3 size-6 text-muted-foreground" />
-                        <p className="text-sm font-bold">Nincs találat</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Próbálj másik keresést vagy csapatszűrőt.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
-              <ProjectDetail
-                project={selected}
-                tab={tab}
-                setTab={setTab}
-                groups={groups}
-                openGroups={openGroups}
-                setOpenGroups={setOpenGroups}
-                toggleTask={toggleTask}
-                taskProgress={taskProgress}
-                taskDone={taskDone}
-                taskTotal={taskTotal}
-                comments={comments}
-                comment={comment}
-                setComment={setComment}
-                addComment={addComment}
-                onNewTask={() => setNewTaskOpen(true)}
-              />
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                  icon={FolderKanban}
+                  label="Aktív projektek"
+                  value="18"
+                  note="3 új ebben a hónapban"
+                  tone="#48d7a4"
+                />
+                <StatCard
+                  icon={AlertTriangle}
+                  label="Figyelmet igényel"
+                  value="5"
+                  note="2 lejárt, 3 kockázatos"
+                  tone="#f0786c"
+                />
+                <StatCard
+                  icon={CheckCircle2}
+                  label="E havi kiadás"
+                  value="7"
+                  note="4 projekt terv szerint"
+                  tone="#62a4ff"
+                />
+                <StatCard
+                  icon={CircleDollarSign}
+                  label="Számlázható"
+                  value="3"
+                  note="1 TIG jóváhagyásra vár"
+                  tone="#c9f257"
+                />
+              </div>
             </div>
-          ) : (
-            <BoardView
-              projects={filtered}
-              selectProject={(id) => {
-                selectProject(id);
-                setView('list');
-              }}
-            />
-          )}
-        </section>
-      </div>
+          </section>
+          <section className="mx-auto max-w-[1640px] px-3 py-4 sm:px-6">
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+                <label className="flex h-9 min-w-0 max-w-md flex-1 items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm">
+                  <Search className="size-4 shrink-0 text-muted-foreground" />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                    placeholder="Projekt, projektszám vagy partner…"
+                  />
+                  {query && (
+                    <button
+                      onClick={() => setQuery('')}
+                      aria-label="Keresés törlése"
+                    >
+                      <X className="size-3.5 text-muted-foreground" />
+                    </button>
+                  )}
+                </label>
+                <label className="relative flex items-center">
+                  <Filter className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground" />
+                  <select
+                    value={teamFilter}
+                    onChange={(event) => setTeamFilter(event.target.value)}
+                    className="h-9 appearance-none rounded-lg border border-input bg-card pl-8 pr-8 text-xs font-semibold outline-none focus:border-ring"
+                  >
+                    <option>Minden csapat</option>
+                    <option>A csapat</option>
+                    <option>B csapat</option>
+                    <option>C csapat</option>
+                    <option>Közös</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground" />
+                </label>
+                <label className="relative flex items-center">
+                  <SlidersHorizontal className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground" />
+                  <select
+                    value={stateFilter}
+                    onChange={(event) => setStateFilter(event.target.value)}
+                    className="h-9 appearance-none rounded-lg border border-input bg-card pl-8 pr-8 text-xs font-semibold outline-none focus:border-ring"
+                  >
+                    <option>Minden állapot</option>
+                    <option>Előkészíthető</option>
+                    <option>Folyamatban</option>
+                    <option>Módosítandó</option>
+                    <option>Kiviteli kiadva</option>
+                    <option>Kész</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground" />
+                </label>
+              </div>
+              <div className="flex rounded-lg border border-input bg-card p-1">
+                <button
+                  onClick={() => setView('list')}
+                  className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold ${view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <List className="size-3.5" />
+                  Lista
+                </button>
+                <button
+                  onClick={() => setView('board')}
+                  className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold ${view === 'board' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <Columns3 className="size-3.5" />
+                  Tábla
+                </button>
+              </div>
+            </div>
+            {view === 'list' ? (
+              <div className="grid min-h-[680px] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_18px_50px_rgb(0_0_0/12%)] xl:grid-cols-[440px_minmax(0,1fr)]">
+                <div className="border-b border-border xl:border-b-0 xl:border-r">
+                  <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                    <div>
+                      <h3 className="text-sm font-bold">Projektek</h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {filtered.length} találat
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() =>
+                        showToast('Rendezés: legközelebbi határidő.')
+                      }
+                      aria-label="Projektek rendezése"
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </div>
+                  <div className="max-h-[700px] space-y-1 overflow-y-auto p-2 nina-scroll">
+                    {filtered.map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => selectProject(project.id)}
+                        className={`group relative w-full overflow-hidden rounded-xl border p-3 text-left transition-all ${selected.id === project.id ? 'border-primary/60 bg-primary/[.07]' : 'border-transparent hover:border-border hover:bg-muted/30'}`}
+                      >
+                        <span
+                          className="absolute inset-y-3 left-0 w-0.5 rounded-r"
+                          style={{
+                            backgroundColor:
+                              selected.id === project.id
+                                ? project.color
+                                : 'transparent',
+                          }}
+                        />
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold">
+                              {project.name}
+                            </p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {project.code} · {project.team}
+                            </p>
+                          </div>
+                          <AvatarStack initials={project.initials} limit={3} />
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${project.progress}%`,
+                                backgroundColor: project.color,
+                              }}
+                            />
+                          </div>
+                          <span className="w-7 text-right text-[10px] font-bold text-muted-foreground">
+                            {project.progress}%
+                          </span>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${stateTone[project.state]}`}
+                          >
+                            {project.state}
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                            <Clock3 className="size-3" />
+                            {project.due}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                    {filtered.length === 0 && (
+                      <div className="grid min-h-56 place-items-center px-8 text-center">
+                        <div>
+                          <Search className="mx-auto mb-3 size-6 text-muted-foreground" />
+                          <p className="text-sm font-bold">Nincs találat</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Próbálj másik keresést vagy csapatszűrőt.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <ProjectDetail
+                  project={selected}
+                  tab={tab}
+                  setTab={setTab}
+                  groups={groups}
+                  openGroups={openGroups}
+                  setOpenGroups={setOpenGroups}
+                  toggleTask={toggleTask}
+                  taskProgress={taskProgress}
+                  taskDone={taskDone}
+                  taskTotal={taskTotal}
+                  comments={comments}
+                  comment={comment}
+                  setComment={setComment}
+                  addComment={addComment}
+                  onNewTask={() => setNewTaskOpen(true)}
+                />
+              </div>
+            ) : (
+              <BoardView
+                projects={filtered}
+                selectProject={(id) => {
+                  selectProject(id);
+                  setView('list');
+                }}
+              />
+            )}
+          </section>
+        </div>
 
-      <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              Új tervezési projekt
-            </DialogTitle>
-            <DialogDescription>
-              Hozd létre az alapadatokat; a feladatcsoportok sablonból is
-              felvehetők később.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <label className="grid gap-1.5 text-xs font-bold">
-              Projekt neve
-              <Input
-                autoFocus
-                value={newProjectName}
-                onChange={(event) => setNewProjectName(event.target.value)}
-                placeholder="pl. Projekt Ióta"
-                className="h-10 font-normal"
-              />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
+        <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">
+                Új tervezési projekt
+              </DialogTitle>
+              <DialogDescription>
+                Hozd létre az alapadatokat; a feladatcsoportok sablonból is
+                felvehetők később.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-2">
               <label className="grid gap-1.5 text-xs font-bold">
-                Csapat
-                <select
-                  value={newProjectTeam}
-                  onChange={(event) => setNewProjectTeam(event.target.value)}
-                  className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
-                >
-                  <option>A csapat</option>
-                  <option>B csapat</option>
-                  <option>C csapat</option>
-                  <option>Közös</option>
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-xs font-bold">
-                Prioritás
-                <select
-                  value={newProjectPriority}
-                  onChange={(event) =>
-                    setNewProjectPriority(
-                      event.target.value as Project['priority'],
-                    )
-                  }
-                  className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
-                >
-                  <option>Közepes</option>
-                  <option>Magas</option>
-                  <option>Alacsony</option>
-                </select>
-              </label>
-            </div>
-            <label className="grid gap-1.5 text-xs font-bold">
-              Partner
-              <Input
-                value={newProjectClient}
-                onChange={(event) => setNewProjectClient(event.target.value)}
-                placeholder="pl. Partner 09"
-                className="h-10 font-normal"
-              />
-            </label>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewProjectOpen(false)}>
-              Mégse
-            </Button>
-            <Button onClick={addProject} disabled={!newProjectName.trim()}>
-              <Plus />
-              Projekt létrehozása
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={newTaskOpen} onOpenChange={setNewTaskOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              Új részfeladat rögzítése
-            </DialogTitle>
-            <DialogDescription>
-              A feladat a Dokumentáció csoportba kerül.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <label className="grid gap-1.5 text-xs font-bold">
-              Cím
-              <Input
-                autoFocus
-                value={newTaskTitle}
-                onChange={(event) => setNewTaskTitle(event.target.value)}
-                placeholder="Feladat megnevezése"
-                className="h-10 font-normal"
-              />
-            </label>
-            <label className="grid gap-1.5 text-xs font-bold">
-              Leírás
-              <Textarea
-                placeholder="Rövid leírás vagy elvárt eredmény…"
-                className="min-h-24 font-normal"
-              />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1.5 text-xs font-bold">
-                Felelős
-                <select
-                  value={newTaskOwner}
-                  onChange={(event) => setNewTaskOwner(event.target.value)}
-                  className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
-                >
-                  <option value="T01">Tervező 01</option>
-                  <option value="T02">Tervező 02</option>
-                  <option value="T03">Tervező 03</option>
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-xs font-bold">
-                Határidő
+                Projekt neve
                 <Input
-                  value={newTaskDue}
-                  onChange={(event) => setNewTaskDue(event.target.value)}
-                  type="date"
+                  autoFocus
+                  value={newProjectName}
+                  onChange={(event) => setNewProjectName(event.target.value)}
+                  placeholder="pl. Projekt Ióta"
+                  className="h-10 font-normal"
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-xs font-bold">
+                  Csapat
+                  <select
+                    value={newProjectTeam}
+                    onChange={(event) => setNewProjectTeam(event.target.value)}
+                    className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
+                  >
+                    <option>A csapat</option>
+                    <option>B csapat</option>
+                    <option>C csapat</option>
+                    <option>Közös</option>
+                  </select>
+                </label>
+                <label className="grid gap-1.5 text-xs font-bold">
+                  Prioritás
+                  <select
+                    value={newProjectPriority}
+                    onChange={(event) =>
+                      setNewProjectPriority(
+                        event.target.value as Project['priority'],
+                      )
+                    }
+                    className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
+                  >
+                    <option>Közepes</option>
+                    <option>Magas</option>
+                    <option>Alacsony</option>
+                  </select>
+                </label>
+              </div>
+              <label className="grid gap-1.5 text-xs font-bold">
+                Partner
+                <Input
+                  value={newProjectClient}
+                  onChange={(event) => setNewProjectClient(event.target.value)}
+                  placeholder="pl. Partner 09"
                   className="h-10 font-normal"
                 />
               </label>
             </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setNewProjectOpen(false)}
+              >
+                Mégse
+              </Button>
+              <Button onClick={addProject} disabled={!newProjectName.trim()}>
+                <Plus />
+                Projekt létrehozása
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={newTaskOpen} onOpenChange={setNewTaskOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">
+                Új részfeladat rögzítése
+              </DialogTitle>
+              <DialogDescription>
+                A feladat a Dokumentáció csoportba kerül.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-2">
+              <label className="grid gap-1.5 text-xs font-bold">
+                Cím
+                <Input
+                  autoFocus
+                  value={newTaskTitle}
+                  onChange={(event) => setNewTaskTitle(event.target.value)}
+                  placeholder="Feladat megnevezése"
+                  className="h-10 font-normal"
+                />
+              </label>
+              <label className="grid gap-1.5 text-xs font-bold">
+                Leírás
+                <Textarea
+                  placeholder="Rövid leírás vagy elvárt eredmény…"
+                  className="min-h-24 font-normal"
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-xs font-bold">
+                  Felelős
+                  <select
+                    value={newTaskOwner}
+                    onChange={(event) => setNewTaskOwner(event.target.value)}
+                    className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
+                  >
+                    <option value="T01">Tervező 01</option>
+                    <option value="T02">Tervező 02</option>
+                    <option value="T03">Tervező 03</option>
+                  </select>
+                </label>
+                <label className="grid gap-1.5 text-xs font-bold">
+                  Határidő
+                  <Input
+                    value={newTaskDue}
+                    onChange={(event) => setNewTaskDue(event.target.value)}
+                    type="date"
+                    className="h-10 font-normal"
+                  />
+                </label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNewTaskOpen(false)}>
+                Mégse
+              </Button>
+              <Button onClick={addTask} disabled={!newTaskTitle.trim()}>
+                <Plus />
+                Feladat hozzáadása
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {toast && (
+          <div
+            role="status"
+            className="fixed bottom-5 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-2 rounded-xl border border-primary/30 bg-popover px-4 py-3 text-sm font-semibold shadow-2xl"
+          >
+            <CheckCircle2 className="size-4 text-primary" />
+            {toast}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewTaskOpen(false)}>
-              Mégse
-            </Button>
-            <Button onClick={addTask} disabled={!newTaskTitle.trim()}>
-              <Plus />
-              Feladat hozzáadása
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-5 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-2 rounded-xl border border-primary/30 bg-popover px-4 py-3 text-sm font-semibold shadow-2xl"
-        >
-          <CheckCircle2 className="size-4 text-primary" />
-          {toast}
-        </div>
-      )}
-    </main>
+        )}
+      </main>
+    </PageComments>
   );
 }
 
@@ -1091,10 +1100,7 @@ function ProjectDetail({
       </div>
       <div className="max-h-[590px] overflow-y-auto p-4 nina-scroll sm:p-6">
         {tab === 'áttekintés' && (
-          <OverviewTab
-            project={project}
-            taskProgress={taskProgress}
-          />
+          <OverviewTab project={project} taskProgress={taskProgress} />
         )}
         {tab === 'feladatok' && (
           <TasksTab
