@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://nina-tervezoi-projektkoveto.rpzxpjjtn8.chatgpt.site'),
   title: 'NINA · Tervezői projektkövető',
   description: 'NINA tervezői projektek, feladatok és határidők kezelése.',
   openGraph: {
