@@ -28,11 +28,24 @@ export type TeamMember = {
   id: string;
   initials: string;
   name: string;
-  role: string;
+  role: TeamRole;
+  team: string;
   discipline: string;
   capacity: number;
   status: 'Szabad' | 'Terhelt' | 'Foglalt';
 };
+
+type TeamRole =
+  | 'PM'
+  | 'Épületvillamossági tervező'
+  | 'Épületvillamossági tervező gyakornok';
+
+const teamNames = ['A csapat', 'B csapat', 'C csapat', 'Közös'];
+const teamRoleOptions: TeamRole[] = [
+  'PM',
+  'Épületvillamossági tervező',
+  'Épületvillamossági tervező gyakornok',
+];
 
 export type StateLogEntry = {
   id: string;
@@ -71,7 +84,8 @@ export const initialTeamMembers: TeamMember[] = [
     id: 'm1',
     initials: 'T01',
     name: 'Tervező 01',
-    role: 'Projektfelelős',
+    role: 'PM',
+    team: 'B csapat',
     discipline: 'Erősáram',
     capacity: 72,
     status: 'Terhelt',
@@ -80,7 +94,8 @@ export const initialTeamMembers: TeamMember[] = [
     id: 'm2',
     initials: 'T02',
     name: 'Tervező 02',
-    role: 'Tervező',
+    role: 'Épületvillamossági tervező',
+    team: 'B csapat',
     discipline: 'Világítás',
     capacity: 58,
     status: 'Szabad',
@@ -89,7 +104,8 @@ export const initialTeamMembers: TeamMember[] = [
     id: 'm3',
     initials: 'T03',
     name: 'Tervező 03',
-    role: 'Tervező',
+    role: 'Épületvillamossági tervező gyakornok',
+    team: 'B csapat',
     discipline: 'Dokumentáció',
     capacity: 64,
     status: 'Szabad',
@@ -98,7 +114,8 @@ export const initialTeamMembers: TeamMember[] = [
     id: 'm4',
     initials: 'T04',
     name: 'Tervező 04',
-    role: 'Ellenőr',
+    role: 'Épületvillamossági tervező',
+    team: 'A csapat',
     discipline: 'Villámvédelem',
     capacity: 81,
     status: 'Foglalt',
@@ -107,7 +124,8 @@ export const initialTeamMembers: TeamMember[] = [
     id: 'm5',
     initials: 'T09',
     name: 'Tervező 09',
-    role: 'Tervező',
+    role: 'Épületvillamossági tervező',
+    team: 'C csapat',
     discipline: 'Elosztók',
     capacity: 45,
     status: 'Szabad',
@@ -116,7 +134,8 @@ export const initialTeamMembers: TeamMember[] = [
     id: 'm6',
     initials: 'T12',
     name: 'Tervező 12',
-    role: 'Ellenőr',
+    role: 'PM',
+    team: 'Közös',
     discipline: 'Minőségellenőrzés',
     capacity: 69,
     status: 'Terhelt',
@@ -302,25 +321,45 @@ export function TeamTab({
   onProjectTeamChange: (team: string) => void;
   onProjectMembersChange: (initials: string[]) => void;
 }) {
-  const assigned = members.filter((member) =>
+  const [activeTeam, setActiveTeam] = useState(project.team);
+
+  useEffect(() => {
+    setActiveTeam(project.team);
+  }, [project.team]);
+
+  const activeTeamMembers = members.filter((member) => member.team === activeTeam);
+  const assigned = activeTeamMembers.filter((member) =>
     project.initials.includes(member.initials),
   );
-  const available = members.filter(
+  const available = activeTeamMembers.filter(
     (member) => !project.initials.includes(member.initials),
   );
 
+  const selectTeam = (team: string) => {
+    setActiveTeam(team);
+  };
   const addMember = (initials: string) =>
     onProjectMembersChange([...project.initials, initials]);
   const removeMember = (initials: string) =>
     onProjectMembersChange(
       project.initials.filter((current) => current !== initials),
     );
-  const updateRole = (id: string, role: string) =>
+  const updateMember = (id: string, patch: Partial<TeamMember>) =>
     setMembers((current) =>
-      current.map((member) =>
-        member.id === id ? { ...member, role } : member,
-      ),
+      current.map((member) => (member.id === id ? { ...member, ...patch } : member)),
     );
+  const updateInitials = (member: TeamMember, value: string) => {
+    const nextInitials = value.trim().toUpperCase().slice(0, 4);
+    if (!nextInitials) return;
+    updateMember(member.id, { initials: nextInitials });
+    if (project.initials.includes(member.initials)) {
+      onProjectMembersChange(
+        project.initials.map((initials) =>
+          initials === member.initials ? nextInitials : initials,
+        ),
+      );
+    }
+  };
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -329,65 +368,88 @@ export function TeamTab({
           <div>
             <h3 className="text-sm font-black">Projektcsapat összeállítása</h3>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Szerepkör, kapacitás és tagság egy helyen.
+              Válts csapatot, majd szerkeszd a tagokat és a projekt tagságát.
             </p>
           </div>
-          <label className="relative">
-            <select
-              value={project.team}
-              onChange={(event) => onProjectTeamChange(event.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-xs font-bold outline-none"
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="bg-muted text-muted-foreground">
+              Projekt: {project.team}
+            </Badge>
+            <Badge className="bg-primary/15 text-primary">
+              Nézet: {activeTeam}
+            </Badge>
+            {activeTeam !== project.team && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onProjectTeamChange(activeTeam)}
+              >
+                Ez legyen a projektcsapat
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {teamNames.map((team) => (
+            <button
+              key={team}
+              type="button"
+              onClick={() => selectTeam(team)}
+              className={`h-9 rounded-lg border px-2 text-xs font-black transition-colors ${
+                activeTeam === team
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background/40 text-muted-foreground hover:text-foreground'
+              }`}
             >
-              <option>A csapat</option>
-              <option>B csapat</option>
-              <option>C csapat</option>
-              <option>Közös</option>
-            </select>
-          </label>
+              {team}
+            </button>
+          ))}
         </div>
         <div className="space-y-3">
           {assigned.map((member) => (
             <article
               key={member.id}
-              className="grid gap-3 rounded-xl border border-border bg-background/40 p-3 sm:grid-cols-[1fr_150px_88px]"
+              className="rounded-xl border border-primary/25 bg-primary/[.04] p-3"
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/20 text-[10px] font-black text-primary">
-                  {member.initials}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{member.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {member.discipline}
-                  </p>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/20 text-[10px] font-black text-primary">
+                    {member.initials}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold">{member.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Projekten van
+                    </p>
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeMember(member.initials)}
+                >
+                  <UserMinus />
+                  Le
+                </Button>
               </div>
-              <select
-                value={member.role}
-                onChange={(event) => updateRole(member.id, event.target.value)}
-                className="h-9 rounded-lg border border-input bg-card px-2 text-xs font-semibold outline-none"
-              >
-                <option>Projektfelelős</option>
-                <option>Tervező</option>
-                <option>Ellenőr</option>
-                <option>Konzulens</option>
-              </select>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeMember(member.initials)}
-              >
-                <UserMinus />
-                Le
-              </Button>
+              <EditableMemberRow
+                member={member}
+                updateMember={updateMember}
+                updateInitials={updateInitials}
+              />
             </article>
           ))}
+          {assigned.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+              Ehhez a projekthez ebben a csapatban még nincs hozzárendelt ember.
+            </div>
+          )}
         </div>
       </section>
       <aside className="space-y-4">
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-bold">Elérhető emberek</h3>
+            <h3 className="text-sm font-bold">{activeTeam} · elérhető emberek</h3>
             <Users className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-2">
@@ -402,7 +464,7 @@ export function TeamTab({
                       {member.initials} · {member.name}
                     </p>
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      {member.discipline} · {member.capacity}% kapacitás
+                      {member.role} · {member.capacity}% kapacitás
                     </p>
                   </div>
                   <Badge className={statusTone(member.status)}>
@@ -418,11 +480,19 @@ export function TeamTab({
                   <UserPlus />
                   Hozzáadás
                 </Button>
+                <div className="mt-3 border-t border-border/70 pt-3">
+                  <EditableMemberRow
+                    member={member}
+                    compact
+                    updateMember={updateMember}
+                    updateInitials={updateInitials}
+                  />
+                </div>
               </div>
             ))}
             {available.length === 0 && (
               <div className="rounded-lg border border-dashed border-border p-5 text-center text-xs text-muted-foreground">
-                Minden demó tervező ezen a projekten van.
+                Ebben a csapatban nincs több elérhető demó tervező.
               </div>
             )}
           </div>
@@ -447,6 +517,106 @@ export function TeamTab({
           </div>
         </section>
       </aside>
+    </div>
+  );
+}
+
+function EditableMemberRow({
+  member,
+  compact = false,
+  updateMember,
+  updateInitials,
+}: {
+  member: TeamMember;
+  compact?: boolean;
+  updateMember: (id: string, patch: Partial<TeamMember>) => void;
+  updateInitials: (member: TeamMember, value: string) => void;
+}) {
+  return (
+    <div className={`grid gap-2 ${compact ? '' : 'sm:grid-cols-[70px_1fr_1fr]'}`}>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Jel
+        <Input
+          value={member.initials}
+          onChange={(event) => updateInitials(member, event.target.value)}
+          className="h-8 text-xs font-semibold"
+        />
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Név
+        <Input
+          value={member.name}
+          onChange={(event) => updateMember(member.id, { name: event.target.value })}
+          className="h-8 text-xs font-semibold"
+        />
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Szakterület
+        <Input
+          value={member.discipline}
+          onChange={(event) =>
+            updateMember(member.id, { discipline: event.target.value })
+          }
+          className="h-8 text-xs font-semibold"
+        />
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground sm:col-span-2">
+        Role
+        <select
+          value={member.role}
+          onChange={(event) =>
+            updateMember(member.id, { role: event.target.value as TeamRole })
+          }
+          className="h-8 rounded-lg border border-input bg-card px-2 text-xs font-semibold text-foreground outline-none"
+        >
+          {teamRoleOptions.map((role) => (
+            <option key={role}>{role}</option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Csapat
+        <select
+          value={member.team}
+          onChange={(event) => updateMember(member.id, { team: event.target.value })}
+          className="h-8 rounded-lg border border-input bg-card px-2 text-xs font-semibold text-foreground outline-none"
+        >
+          {teamNames.map((team) => (
+            <option key={team}>{team}</option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Kapacitás
+        <Input
+          value={String(member.capacity)}
+          type="number"
+          min={0}
+          max={100}
+          onChange={(event) =>
+            updateMember(member.id, {
+              capacity: Math.max(0, Math.min(100, Number(event.target.value) || 0)),
+            })
+          }
+          className="h-8 text-xs font-semibold"
+        />
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground">
+        Státusz
+        <select
+          value={member.status}
+          onChange={(event) =>
+            updateMember(member.id, {
+              status: event.target.value as TeamMember['status'],
+            })
+          }
+          className="h-8 rounded-lg border border-input bg-card px-2 text-xs font-semibold text-foreground outline-none"
+        >
+          <option>Szabad</option>
+          <option>Terhelt</option>
+          <option>Foglalt</option>
+        </select>
+      </label>
     </div>
   );
 }

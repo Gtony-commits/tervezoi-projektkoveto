@@ -58,10 +58,10 @@ import {
 } from '@/components/planner-addons';
 
 type ProjectState =
-  | 'Nincs beállítva'
+  | 'Elkezdhető'
   | 'Előkészíthető'
   | 'Folyamatban'
-  | 'Átnevezendő'
+  | 'Átnézendő'
   | 'Munkaközi kiadva'
   | 'Módosítandó'
   | 'Kiviteli kiadva'
@@ -376,10 +376,10 @@ const financeSteps = [
   'Számla fizetve',
 ];
 const projectStateOptions: ProjectState[] = [
-  'Nincs beállítva',
+  'Elkezdhető',
   'Előkészíthető',
   'Folyamatban',
-  'Átnevezendő',
+  'Átnézendő',
   'Munkaközi kiadva',
   'Kiviteli kiadva',
   'Módosítandó',
@@ -434,7 +434,7 @@ const activityItems = [
     icon: Paperclip,
   },
   {
-    who: 'Projektfelelős 01',
+    who: 'PM 01',
     when: 'Tegnap, 16:18',
     text: 'Az L1–L4 elosztók határideje frissült.',
     icon: CalendarDays,
@@ -447,10 +447,10 @@ const activityItems = [
   },
 ];
 const stateTone: Record<ProjectState, string> = {
-  'Nincs beállítva': 'bg-slate-400/12 text-slate-300 border-slate-400/20',
+  Elkezdhető: 'bg-slate-400/12 text-slate-300 border-slate-400/20',
   Előkészíthető: 'bg-sky-400/12 text-sky-300 border-sky-400/20',
   Folyamatban: 'bg-emerald-400/12 text-emerald-300 border-emerald-400/20',
-  Átnevezendő: 'bg-amber-400/12 text-amber-300 border-amber-400/20',
+  Átnézendő: 'bg-amber-400/12 text-amber-300 border-amber-400/20',
   'Munkaközi kiadva': 'bg-cyan-400/12 text-cyan-300 border-cyan-400/20',
   Módosítandó: 'bg-orange-400/12 text-orange-300 border-orange-400/20',
   'Kiviteli kiadva': 'bg-violet-400/12 text-violet-300 border-violet-400/20',
@@ -1462,9 +1462,9 @@ function OverviewTab({
           </div>
           <div className="space-y-3">
             {[
-              ['T01', 'Projektfelelős 01', 'Projektfelelős'],
-              ['T09', 'Tervező 02', 'Tervező'],
-              ['T02', 'Tervező 03', 'Tervező'],
+              ['T01', 'PM 01', 'PM'],
+              ['T09', 'Tervező 02', 'Épületvillamossági tervező'],
+              ['T02', 'Tervező 03', 'Épületvillamossági tervező gyakornok'],
             ].map(([initial, name, role], index) => (
               <div key={initial} className="flex items-center gap-3">
                 <span
