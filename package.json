@@ -1,4 +1,5 @@
 {
+  "packageManager": "pnpm@11.25.0",
   "name": "sites-project",
   "version": "0.1.0",
   "private": true,
@@ -52,12 +53,6 @@
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },
-  "type": "module",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "workerd"
-    ]
-  }
+  "type": "module"
+
 }
