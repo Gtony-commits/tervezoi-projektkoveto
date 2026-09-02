@@ -13,18 +13,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nina-tervezoi-projektkoveto.rpzxpjjtn8.chatgpt.site'),
-  title: 'NINA · Tervezői projektkövető',
-  description: 'NINA tervezői projektek, feladatok és határidők kezelése.',
+  metadataBase: new URL(
+    'https://nina-tervezoi-projektkoveto.rpzxpjjtn8.chatgpt.site',
+  ),
+  title: 'Tervezői projektkövető',
+  description: 'Tervezői projektek, feladatok és határidők kezelése.',
   openGraph: {
-    title: 'NINA · Tervezői projektkövető',
-    description: 'Projektek, határidők és felelősök egy közös tervezői munkafelületen.',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'NINA Tervezői projektkövető' }],
+    title: 'Tervezői projektkövető',
+    description:
+      'Projektek, határidők és felelősök egy közös tervezői munkafelületen.',
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Tervezői projektkövető',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NINA · Tervezői projektkövető',
-    description: 'Projektek, határidők és felelősök egy közös tervezői munkafelületen.',
+    title: 'Tervezői projektkövető',
+    description:
+      'Projektek, határidők és felelősök egy közös tervezői munkafelületen.',
     images: ['/og.png'],
   },
 };
