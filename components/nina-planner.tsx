@@ -11,7 +11,9 @@ import {
   ChevronDown,
   CircleDollarSign,
   Clock3,
+  ClipboardList,
   Columns3,
+  Database,
   Filter,
   FolderKanban,
   List,
@@ -43,12 +45,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { PageComments } from '@/components/page-comments';
 
 type ProjectState =
+  | 'Nincs beállítva'
   | 'Előkészíthető'
   | 'Folyamatban'
+  | 'Átnevezendő'
+  | 'Munkaközi kiadva'
   | 'Módosítandó'
   | 'Kiviteli kiadva'
   | 'Kész';
-type DetailTab = 'áttekintés' | 'feladatok' | 'pénzügy' | 'tevékenység';
+type DetailTab =
+  | 'áttekintés'
+  | 'feladatok'
+  | 'vállalás'
+  | 'pénzügy'
+  | 'tevékenység';
 type Project = {
   id: number;
   name: string;
@@ -350,6 +360,57 @@ const financeSteps = [
   'Számla kiállítva',
   'Számla fizetve',
 ];
+const projectStateOptions: ProjectState[] = [
+  'Nincs beállítva',
+  'Előkészíthető',
+  'Folyamatban',
+  'Átnevezendő',
+  'Munkaközi kiadva',
+  'Kiviteli kiadva',
+  'Módosítandó',
+  'Kész',
+];
+const commitmentContent = {
+  included: [
+    '3D modell készítés (Revit modell, LOD300, elosztóberendezések, lámpatestek és kábeltálcák megjelenítésével)',
+    'Belső terek általános világítási rendszerének tervezése részletes világításméretezés alapján',
+    'Belső terek tartalékvilágításának tervezése',
+    'Erőátvitel, épületen belüli villamos fogyasztók betáplálásának tervezése',
+    'Gépészeti automatika, épületautomatika és BMS tervezés',
+    'Gyengeáramú rendszerek tervezése',
+    'Kábelméretezés, zárlatszámítás és feszültségesés-számítás',
+    'Kisfeszültségű elosztóberendezések tervezése',
+    'Teleken belüli kültéri területek világítás- és erősáram-tervezése',
+    'Tűzjelző, üzemi hangosítási és villámvédelmi rendszerek tervezése',
+  ],
+  excluded: [
+    'BREEAM tervcsomag',
+    'Gyártmánytervezés',
+    'Hatósági ügyintézés',
+    'Idegen nyelvű tervcsomag készítése',
+    'Közműmentesítés',
+    'Megvalósulási tervcsomag',
+    'Nyomtatott példányok készítése',
+    'Technológia tervezés',
+    'Üzemeltetési kézikönyv',
+  ],
+  notShown: [
+    '3D tervezés (Revit)',
+    'Árazatlan költségvetés',
+    'Beléptető rendszer tervezése',
+    'Belső terek világítási rendszere',
+    'BIM modell üzemeltetési célra',
+    'Gépészeti tervezés',
+    'Gyengeáramú rendszerek tervezése',
+    'Hő- és füstelvezetés',
+    'Kamera rendszer tervezése',
+    'Kiviteli költségvetés készítése',
+    'Tender dokumentáció készítése',
+    'Tűzjelző rendszer tervezése',
+    'Üzemi hangosítási rendszer',
+  ],
+  note: 'A vállalás a bérleményi tervezésre vonatkozik; az alapépületi munkarészek és a külön jelölt területek nem részei a tervezési csomagnak.',
+};
 const activityItems = [
   {
     who: 'Tervező 02',
@@ -371,8 +432,11 @@ const activityItems = [
   },
 ];
 const stateTone: Record<ProjectState, string> = {
+  'Nincs beállítva': 'bg-slate-400/12 text-slate-300 border-slate-400/20',
   Előkészíthető: 'bg-sky-400/12 text-sky-300 border-sky-400/20',
   Folyamatban: 'bg-emerald-400/12 text-emerald-300 border-emerald-400/20',
+  Átnevezendő: 'bg-amber-400/12 text-amber-300 border-amber-400/20',
+  'Munkaközi kiadva': 'bg-cyan-400/12 text-cyan-300 border-cyan-400/20',
   Módosítandó: 'bg-orange-400/12 text-orange-300 border-orange-400/20',
   'Kiviteli kiadva': 'bg-violet-400/12 text-violet-300 border-violet-400/20',
   Kész: 'bg-lime-400/12 text-lime-300 border-lime-400/20',
@@ -489,6 +553,14 @@ export function NinaPlanner() {
   const showToast = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(''), 2500);
+  };
+  const updateProjectState = (state: ProjectState) => {
+    setProjects((current) =>
+      current.map((project) =>
+        project.id === selected.id ? { ...project, state } : project,
+      ),
+    );
+    showToast(`Tervezési állapot: ${state}.`);
   };
   const toggleTask = (groupId: string, taskId: string, checked: boolean) =>
     setGroups((current) =>
@@ -709,11 +781,9 @@ export function NinaPlanner() {
                     className="h-9 appearance-none rounded-lg border border-input bg-card pl-8 pr-8 text-xs font-semibold outline-none focus:border-ring"
                   >
                     <option>Minden állapot</option>
-                    <option>Előkészíthető</option>
-                    <option>Folyamatban</option>
-                    <option>Módosítandó</option>
-                    <option>Kiviteli kiadva</option>
-                    <option>Kész</option>
+                    {projectStateOptions.map((state) => (
+                      <option key={state}>{state}</option>
+                    ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground" />
                 </label>
@@ -839,6 +909,7 @@ export function NinaPlanner() {
                   setComment={setComment}
                   addComment={addComment}
                   onNewTask={() => setNewTaskOpen(true)}
+                  onStateChange={updateProjectState}
                 />
               </div>
             ) : (
@@ -1023,6 +1094,7 @@ function ProjectDetail({
   setComment,
   addComment,
   onNewTask,
+  onStateChange,
 }: {
   project: Project;
   tab: DetailTab;
@@ -1044,6 +1116,7 @@ function ProjectDetail({
   setComment: (value: string) => void;
   addComment: () => void;
   onNewTask: () => void;
+  onStateChange: (state: ProjectState) => void;
 }) {
   const tabs: { value: DetailTab; label: string; icon: typeof Activity }[] = [
     { value: 'áttekintés', label: 'Áttekintés', icon: Activity },
@@ -1052,6 +1125,7 @@ function ProjectDetail({
       label: `Feladatok ${taskDone}/${taskTotal}`,
       icon: CheckCircle2,
     },
+    { value: 'vállalás', label: 'Vállalás', icon: ClipboardList },
     { value: 'pénzügy', label: 'Pénzügy', icon: CircleDollarSign },
     { value: 'tevékenység', label: 'Tevékenység', icon: MessageSquare },
   ];
@@ -1067,11 +1141,6 @@ function ProjectDetail({
               <Badge variant="outline" className="h-6 rounded-md">
                 {project.team}
               </Badge>
-              <span
-                className={`rounded-md border px-2 py-1 text-[10px] font-bold ${stateTone[project.state]}`}
-              >
-                {project.state}
-              </span>
             </div>
             <h2 className="truncate text-xl font-black sm:text-2xl">
               {project.name}
@@ -1080,7 +1149,33 @@ function ProjectDetail({
               {project.client} · Ajánlat: {project.offer}
             </p>
           </div>
-          <AvatarStack initials={project.initials} />
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Tervezési állapot
+              <span className="relative">
+                <select
+                  value={project.state}
+                  onChange={(event) =>
+                    onStateChange(event.target.value as ProjectState)
+                  }
+                  className={`h-9 appearance-none rounded-lg border py-0 pl-3 pr-9 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/35 ${stateTone[project.state]}`}
+                  aria-label="Tervezési állapot kézi beállítása"
+                >
+                  {projectStateOptions.map((state) => (
+                    <option
+                      key={state}
+                      value={state}
+                      className="bg-slate-900 text-white"
+                    >
+                      {state}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2" />
+              </span>
+            </label>
+            <AvatarStack initials={project.initials} />
+          </div>
         </div>
         <div className="mt-5 flex gap-1 overflow-x-auto nina-scroll">
           {tabs.map(({ value, label, icon: Icon }) => (
@@ -1111,6 +1206,7 @@ function ProjectDetail({
             onNewTask={onNewTask}
           />
         )}
+        {tab === 'vállalás' && <CommitmentTab project={project} />}
         {tab === 'pénzügy' && <FinanceTab project={project} />}
         {tab === 'tevékenység' && (
           <ActivityTab
@@ -1375,6 +1471,72 @@ function TasksTab({
   );
 }
 
+function CommitmentTab({ project }: { project: Project }) {
+  const columns = [
+    {
+      title: 'Tartalmazza',
+      items: commitmentContent.included,
+      tone: 'border-emerald-400/25 bg-emerald-400/[.04]',
+    },
+    {
+      title: 'Nem tartalmazza',
+      items: commitmentContent.excluded,
+      tone: 'border-amber-400/25 bg-amber-400/[.04]',
+    },
+    {
+      title: 'Nem jelenik meg',
+      items: commitmentContent.notShown,
+      tone: 'border-slate-400/25 bg-slate-400/[.04]',
+    },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/[.06] p-4">
+        <div className="flex items-center gap-3">
+          <span className="grid size-9 place-items-center rounded-lg bg-primary/15 text-primary">
+            <Database className="size-4" />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold">
+              Projektvállalás · {project.code}
+            </h3>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Integrációs előnézet a meglévő vállalatirányítási rendszer
+              adataiból.
+            </p>
+          </div>
+        </div>
+        <Badge className="bg-primary/15 text-primary">
+          Automatikus átvételre előkészítve
+        </Badge>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-3">
+        {columns.map((column) => (
+          <section
+            key={column.title}
+            className={`rounded-xl border p-4 ${column.tone}`}
+          >
+            <h3 className="mb-3 text-sm font-black">{column.title}</h3>
+            <ul className="space-y-2 pl-4 text-[11px] leading-relaxed text-foreground/85 marker:text-primary">
+              {column.items.map((item) => (
+                <li key={item} className="list-disc pl-1">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h3 className="text-sm font-black">Megjegyzés</h3>
+        <p className="mt-2 text-xs leading-relaxed text-foreground/85">
+          {commitmentContent.note}
+        </p>
+      </section>
+    </div>
+  );
+}
+
 function FinanceTab({ project }: { project: Project }) {
   const current = Math.max(
     0,
@@ -1383,88 +1545,108 @@ function FinanceTab({ project }: { project: Project }) {
     ),
   );
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
-      <div className="rounded-xl border border-border bg-card p-5">
-        <div className="mb-5">
-          <h3 className="text-sm font-bold">Pénzügyi folyamat</h3>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            A projekt szerződésétől a számla rendezéséig.
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/[.06] p-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Tervezési állapot hivatkozás
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A pénzügyi munkatársak a tervezők által kézzel beállított állapotot
+            látják.
           </p>
         </div>
-        <div className="space-y-0">
-          {financeSteps.map((step, index) => {
-            const complete = index < current;
-            const active = index === current;
-            return (
-              <div key={step} className="relative flex gap-3 pb-4 last:pb-0">
-                <div
-                  className="relative z-10 grid size-6 shrink-0 place-items-center rounded-full border text-[10px] font-black"
-                  style={{
-                    borderColor:
-                      complete || active ? '#48d7a4' : 'var(--border)',
-                    background: complete
-                      ? '#48d7a4'
-                      : active
-                        ? 'rgb(72 215 164 / 14%)'
-                        : 'var(--card)',
-                    color: complete
-                      ? '#10221f'
-                      : active
-                        ? '#48d7a4'
-                        : 'var(--muted-foreground)',
-                  }}
-                >
-                  {complete ? <Check className="size-3" /> : index + 1}
-                </div>
-                {index < financeSteps.length - 1 && (
-                  <span className="absolute left-[11px] top-6 h-full w-px bg-border" />
-                )}
-                <div className="pt-0.5">
-                  <p
-                    className={`text-xs font-semibold ${active ? 'text-primary' : complete ? 'text-foreground' : 'text-muted-foreground'}`}
-                  >
-                    {step}
-                  </p>
-                  {active && (
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      Jelenlegi állapot · frissítve augusztus 29.
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <span
+          className={`rounded-lg border px-3 py-2 text-xs font-bold ${stateTone[project.state]}`}
+        >
+          {project.state}
+        </span>
       </div>
-      <div className="space-y-3">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Ajánlati szám
-          </p>
-          <p className="mt-1 text-sm font-bold">{project.offer}</p>
+      <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="mb-5">
+            <h3 className="text-sm font-bold">Pénzügyi folyamat</h3>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              A projekt szerződésétől a számla rendezéséig.
+            </p>
+          </div>
+          <div className="space-y-0">
+            {financeSteps.map((step, index) => {
+              const complete = index < current;
+              const active = index === current;
+              return (
+                <div key={step} className="relative flex gap-3 pb-4 last:pb-0">
+                  <div
+                    className="relative z-10 grid size-6 shrink-0 place-items-center rounded-full border text-[10px] font-black"
+                    style={{
+                      borderColor:
+                        complete || active ? '#48d7a4' : 'var(--border)',
+                      background: complete
+                        ? '#48d7a4'
+                        : active
+                          ? 'rgb(72 215 164 / 14%)'
+                          : 'var(--card)',
+                      color: complete
+                        ? '#10221f'
+                        : active
+                          ? '#48d7a4'
+                          : 'var(--muted-foreground)',
+                    }}
+                  >
+                    {complete ? <Check className="size-3" /> : index + 1}
+                  </div>
+                  {index < financeSteps.length - 1 && (
+                    <span className="absolute left-[11px] top-6 h-full w-px bg-border" />
+                  )}
+                  <div className="pt-0.5">
+                    <p
+                      className={`text-xs font-semibold ${active ? 'text-primary' : complete ? 'text-foreground' : 'text-muted-foreground'}`}
+                    >
+                      {step}
+                    </p>
+                    {active && (
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        Jelenlegi állapot · frissítve augusztus 29.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Szerződésszám
-          </p>
-          <p className="mt-1 text-sm font-bold">SZE26/{project.code}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Tervezési díj
-          </p>
-          <p className="mt-1 text-xl font-black">4 850 000 Ft</p>
-          <p className="mt-1 text-[10px] text-muted-foreground">nettó érték</p>
-        </div>
-        <div className="rounded-xl border border-lime-400/20 bg-lime-400/[.06] p-4">
-          <p className="flex items-center gap-2 text-xs font-bold text-lime-300">
-            <CircleDollarSign className="size-4" />
-            Számlázási előfeltétel
-          </p>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            A dokumentáció lezárása után a projekt automatikusan átkerül a
-            számlázható listába.
-          </p>
+        <div className="space-y-3">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Ajánlati szám
+            </p>
+            <p className="mt-1 text-sm font-bold">{project.offer}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Szerződésszám
+            </p>
+            <p className="mt-1 text-sm font-bold">SZE26/{project.code}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Tervezési díj
+            </p>
+            <p className="mt-1 text-xl font-black">4 850 000 Ft</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              nettó érték
+            </p>
+          </div>
+          <div className="rounded-xl border border-lime-400/20 bg-lime-400/[.06] p-4">
+            <p className="flex items-center gap-2 text-xs font-bold text-lime-300">
+              <CircleDollarSign className="size-4" />
+              Számlázási előfeltétel
+            </p>
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+              A dokumentáció lezárása után a projekt automatikusan átkerül a
+              számlázható listába.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -1533,16 +1715,10 @@ function BoardView({
   projects: Project[];
   selectProject: (id: number) => void;
 }) {
-  const columns: ProjectState[] = [
-    'Előkészíthető',
-    'Folyamatban',
-    'Módosítandó',
-    'Kiviteli kiadva',
-    'Kész',
-  ];
+  const columns = projectStateOptions;
   return (
     <div className="overflow-x-auto pb-3 nina-scroll">
-      <div className="grid min-w-[1180px] grid-cols-5 gap-3">
+      <div className="grid min-w-[1900px] grid-cols-8 gap-3">
         {columns.map((state) => {
           const items = projects.filter((project) => project.state === state);
           return (
