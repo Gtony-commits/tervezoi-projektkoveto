@@ -99,7 +99,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező',
     team: 'B csapat',
     discipline: 'Világítás',
-    permissions: 'Feladat szerkesztés, kommentelés',
+    permissions: 'V, Vn',
     capacity: 58,
     status: 'Szabad',
   },
@@ -428,7 +428,7 @@ export function TeamTab({
                 <span>{member.capacity}% kapacitás</span>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Jogosultság: {member.permissions}
+                Kamarai szám: {member.permissions}
               </p>
             </article>
           ))}
@@ -608,17 +608,17 @@ export function DesignersDirectory({
             </select>
           </label>
           <label className="grid gap-1.5 text-xs font-bold">
-            Jogosultságok
+            Kamarai szám
             <Textarea
               value={newPermissions}
               onChange={(event) => setNewPermissions(event.target.value)}
-              className="min-h-20 font-normal"
+              className="min-h-5 font-normal"
             />
           </label>
           <Button
             onClick={addMember}
             disabled={!newName.trim() || !newInitials.trim()}
-            className="w-full"
+            className="w-full bg-primary text-white hover:bg-primary/90 disabled:text-white/60"
           >
             <UserPlus />
             Tervező hozzáadása
