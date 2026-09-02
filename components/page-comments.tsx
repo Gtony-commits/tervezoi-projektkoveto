@@ -14,16 +14,6 @@ import {
 
 import { Button } from '@/components/ui/button';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -551,36 +541,42 @@ export function PageComments({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <Dialog
         open={Boolean(deletingComment)}
         onOpenChange={(open) => {
           if (!open && !mutating) setDeletingComment(null);
         }}
       >
-        <AlertDialogContent data-comment-control>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Biztosan törlöd a kommentet?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <DialogContent data-comment-control className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Biztosan törlöd a kommentet?</DialogTitle>
+            <DialogDescription>
               Ez a művelet nem vonható vissza, a komment minden látogatónál
               eltűnik.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </DialogDescription>
+          </DialogHeader>
           {error && (
             <p className="text-xs font-semibold text-red-300">{error}</p>
           )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={mutating}>Mégse</AlertDialogCancel>
-            <AlertDialogAction
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeletingComment(null)}
+              disabled={mutating}
+            >
+              Mégse
+            </Button>
+            <Button
               onClick={deleteComment}
               disabled={mutating}
               className="bg-red-500 text-white hover:bg-red-400"
             >
               {mutating ? <Loader2 className="animate-spin" /> : <Trash2 />}
               Végleges törlés
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {savedNotice && (
         <div
