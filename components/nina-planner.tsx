@@ -47,6 +47,7 @@ import { PageComments } from '@/components/page-comments';
 import {
   CommitmentTaskSuggestions,
   DemoCredentialsNote,
+  DesignersDirectory,
   initialReleases,
   initialStateLog,
   initialTeamMembers,
@@ -87,7 +88,6 @@ type Project = {
   state: ProjectState;
   priority: 'Magas' | 'Közepes' | 'Alacsony';
   finance: string;
-  client: string;
   color: string;
 };
 type Task = {
@@ -114,7 +114,6 @@ const initialProjects: Project[] = [
     state: 'Folyamatban',
     priority: 'Magas',
     finance: 'Aláírásra vár',
-    client: 'Partner 01',
     color: '#48d7a4',
   },
   {
@@ -130,7 +129,6 @@ const initialProjects: Project[] = [
     state: 'Előkészíthető',
     priority: 'Közepes',
     finance: 'Szerződéskötés',
-    client: 'Partner 02',
     color: '#62a4ff',
   },
   {
@@ -146,7 +144,6 @@ const initialProjects: Project[] = [
     state: 'Folyamatban',
     priority: 'Közepes',
     finance: 'TIG kiállítható',
-    client: 'Partner 03',
     color: '#9e83ff',
   },
   {
@@ -162,7 +159,6 @@ const initialProjects: Project[] = [
     state: 'Módosítandó',
     priority: 'Alacsony',
     finance: 'Aláírva',
-    client: 'Partner 04',
     color: '#f1ab62',
   },
   {
@@ -178,7 +174,6 @@ const initialProjects: Project[] = [
     state: 'Folyamatban',
     priority: 'Közepes',
     finance: 'TIG aláírásra vár',
-    client: 'Partner 05',
     color: '#54c9d9',
   },
   {
@@ -194,7 +189,6 @@ const initialProjects: Project[] = [
     state: 'Kiviteli kiadva',
     priority: 'Közepes',
     finance: 'Dokumentáció lezárva',
-    client: 'Partner 06',
     color: '#df7fde',
   },
   {
@@ -210,7 +204,6 @@ const initialProjects: Project[] = [
     state: 'Kész',
     priority: 'Alacsony',
     finance: 'Számla kiállítva',
-    client: 'Partner 07',
     color: '#67c977',
   },
   {
@@ -226,7 +219,6 @@ const initialProjects: Project[] = [
     state: 'Előkészíthető',
     priority: 'Magas',
     finance: 'Szerződéskötés',
-    client: 'Partner 08',
     color: '#f0786c',
   },
 ];
@@ -520,12 +512,40 @@ function StatCard({
   );
 }
 
+const teamOptions = ['A csapat', 'B csapat', 'C csapat', 'Közös'];
+
+function TeamSelectPill({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (team: string) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onClick={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        event.stopPropagation();
+        onChange(event.target.value);
+      }}
+      className="h-8 rounded-full border border-input bg-background px-3 text-xs font-black text-foreground outline-none transition-colors hover:border-primary/50 focus:border-primary"
+      aria-label="Projektcsapat kiválasztása"
+    >
+      {teamOptions.map((team) => (
+        <option key={team}>{team}</option>
+      ))}
+    </select>
+  );
+}
+
 export function NinaPlanner() {
   const [projects, setProjects] = useState(initialProjects);
   const [selectedId, setSelectedId] = useState(1);
   const [query, setQuery] = useState('');
   const [teamFilter, setTeamFilter] = useState('Minden csapat');
   const [stateFilter, setStateFilter] = useState('Minden állapot');
+  const [section, setSection] = useState<'projects' | 'designers'>('projects');
   const [view, setView] = useState<'list' | 'board'>('list');
   const [tab, setTab] = useState<DetailTab>('áttekintés');
   const [groups, setGroups] = useState(initialGroups);
@@ -534,11 +554,30 @@ export function NinaPlanner() {
   );
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectClient, setNewProjectClient] = useState('');
   const [newProjectTeam, setNewProjectTeam] = useState('A csapat');
   const [newProjectPriority, setNewProjectPriority] =
     useState<Project['priority']>('Közepes');
+  const [templates, setTemplates] = useState([
+    {
+      id: 'tpl-1',
+      name: 'Általános épületvillamossági terv',
+      team: 'B csapat',
+      items: ['Dokumentáció', 'Elosztók', 'Installáció', 'Ellenőrzés'],
+    },
+    {
+      id: 'tpl-2',
+      name: 'Gyengeáramú feladatcsomag',
+      team: 'C csapat',
+      items: ['Tűzjelző', 'Kamera', 'IT hálózat', 'Költségvetés'],
+    },
+  ]);
+  const [templateName, setTemplateName] = useState('');
+  const [templateTeam, setTemplateTeam] = useState('A csapat');
+  const [templateItems, setTemplateItems] = useState(
+    'Dokumentáció\nElosztók\nInstalláció\nEllenőrzés',
+  );
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskOwner, setNewTaskOwner] = useState('T01');
   const [newTaskDue, setNewTaskDue] = useState('');
@@ -556,7 +595,7 @@ export function NinaPlanner() {
     projects.find((project) => project.id === selectedId) ?? projects[0];
   const filtered = projects.filter(
     (project) =>
-      `${project.name} ${project.code} ${project.client}`
+      `${project.name} ${project.code}`
         .toLowerCase()
         .includes(query.toLowerCase()) &&
       (teamFilter === 'Minden csapat' || project.team === teamFilter) &&
@@ -599,9 +638,28 @@ export function NinaPlanner() {
     showToast(`Tervezési állapot: ${state}.`);
   };
   const updateProjectTeam = (team: string) => {
+    updateProjectTeamForProject(selected.id, team);
+  };
+  const updateProjectTeamForProject = (projectId: number, team: string) => {
+    const teamInitials = teamMembers
+      .filter((member) => member.team === team)
+      .map((member) => member.initials);
     setProjects((current) =>
       current.map((project) =>
-        project.id === selected.id ? { ...project, team } : project,
+        project.id === projectId
+          ? {
+              ...project,
+              team,
+              initials:
+                project.initials.filter((initial) =>
+                  teamInitials.includes(initial),
+                ).length > 0
+                  ? project.initials.filter((initial) =>
+                      teamInitials.includes(initial),
+                    )
+                  : teamInitials.slice(0, 2),
+            }
+          : project,
       ),
     );
     showToast(`Csapat frissítve: ${team}.`);
@@ -630,29 +688,55 @@ export function NinaPlanner() {
   const addProject = () => {
     if (!newProjectName.trim()) return;
     const nextId = Math.max(...projects.map((project) => project.id)) + 1;
+    const starterInitials = teamMembers
+      .filter((member) => member.team === newProjectTeam)
+      .slice(0, 2)
+      .map((member) => member.initials);
     const newProject: Project = {
       id: nextId,
       name: newProjectName.trim(),
       code: `P26${String(nextId + 80).padStart(3, '0')}`,
       offer: '–',
       team: newProjectTeam,
-      initials: ['T01'],
+      initials: starterInitials,
       progress: 0,
       due: 'nincs',
       dueLong: 'Nincs megadva',
       state: 'Előkészíthető',
       priority: newProjectPriority,
       finance: 'Szerződéskötés',
-      client: newProjectClient.trim() || 'Partner –',
       color: '#48d7a4',
     };
     setProjects((current) => [newProject, ...current]);
     setSelectedId(nextId);
     setNewProjectName('');
-    setNewProjectClient('');
     setNewProjectOpen(false);
+    setSection('projects');
     setView('list');
     showToast('Az új projekt létrejött.');
+  };
+  const createTemplate = () => {
+    if (!templateName.trim()) return;
+    setTemplates((current) => [
+      {
+        id: `tpl-${Date.now()}`,
+        name: templateName.trim(),
+        team: templateTeam,
+        items: templateItems
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      },
+      ...current,
+    ]);
+    setTemplateName('');
+    showToast('A sablon létrejött.');
+  };
+  const startProjectFromTemplate = (template: (typeof templates)[number]) => {
+    setNewProjectName(`${template.name} projekt`);
+    setNewProjectTeam(template.team);
+    setTemplatesOpen(false);
+    setNewProjectOpen(true);
   };
   const addTask = () => {
     if (!newTaskTitle.trim()) return;
@@ -724,7 +808,13 @@ export function NinaPlanner() {
     setTab('áttekintés');
   };
   return (
-    <PageComments pageKey={`${view}:${selected.code}:${tab}`}>
+    <PageComments
+      pageKey={
+        section === 'designers'
+          ? 'designers'
+          : `${view}:${selected.code}:${tab}`
+      }
+    >
       <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
         <div>
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur-xl sm:px-6">
@@ -757,23 +847,36 @@ export function NinaPlanner() {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-black tracking-tight sm:text-2xl">
-                    Futó tervezési projektek
+                    {section === 'projects'
+                      ? 'Futó tervezési projektek'
+                      : 'Tervezői törzslista'}
                   </h2>
                   <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                    Projektállapot, részfeladatok és pénzügy egy közös
-                    munkafelületen.
+                    {section === 'projects'
+                      ? 'Projektállapot, részfeladatok és pénzügy egy közös munkafelületen.'
+                      : 'Innen kerülnek be az elérhető tervezők a csapatokhoz.'}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex rounded-lg border border-input bg-card p-1">
+                    <button
+                      onClick={() => setSection('projects')}
+                      className={`h-8 rounded-md px-3 text-xs font-black ${section === 'projects' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Projektek
+                    </button>
+                    <button
+                      onClick={() => setSection('designers')}
+                      className={`h-8 rounded-md px-3 text-xs font-black ${section === 'designers' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Tervezők
+                    </button>
+                  </div>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setNewProjectName('Új sablonprojekt');
-                      setNewProjectClient('Partner –');
-                      setNewProjectOpen(true);
-                    }}
+                    onClick={() => setTemplatesOpen(true)}
                   >
-                    <Zap /> Sablonból
+                    <Zap /> Sablonok
                   </Button>
                   <Button
                     variant="outline"
@@ -816,6 +919,13 @@ export function NinaPlanner() {
             </div>
           </section>
           <section className="mx-auto max-w-[1640px] px-3 py-4 sm:px-6">
+            {section === 'designers' ? (
+              <DesignersDirectory
+                members={teamMembers}
+                setMembers={setTeamMembers}
+              />
+            ) : (
+              <>
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
                 <label className="flex h-9 min-w-0 max-w-md flex-1 items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm">
@@ -824,7 +934,7 @@ export function NinaPlanner() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-                    placeholder="Projekt, projektszám vagy partner…"
+                    placeholder="Projekt vagy projektszám…"
                   />
                   {query && (
                     <button
@@ -905,9 +1015,16 @@ export function NinaPlanner() {
                   </div>
                   <div className="max-h-[700px] space-y-1 overflow-y-auto p-2 nina-scroll">
                     {filtered.map((project) => (
-                      <button
+                      <article
                         key={project.id}
                         onClick={() => selectProject(project.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            selectProject(project.id);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
                         className={`group relative w-full overflow-hidden rounded-xl border p-3 text-left transition-all ${selected.id === project.id ? 'border-primary/60 bg-primary/[.07]' : 'border-transparent hover:border-border hover:bg-muted/30'}`}
                       >
                         <span
@@ -925,10 +1042,15 @@ export function NinaPlanner() {
                               {project.name}
                             </p>
                             <p className="mt-1 text-[11px] text-muted-foreground">
-                              {project.code} · {project.team}
+                              {project.code}
                             </p>
                           </div>
-                          <AvatarStack initials={project.initials} limit={3} />
+                          <TeamSelectPill
+                            value={project.team}
+                            onChange={(team) =>
+                              updateProjectTeamForProject(project.id, team)
+                            }
+                          />
                         </div>
                         <div className="mt-3 flex items-center gap-2">
                           <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
@@ -955,7 +1077,7 @@ export function NinaPlanner() {
                             {project.due}
                           </span>
                         </div>
-                      </button>
+                      </article>
                     ))}
                     {filtered.length === 0 && (
                       <div className="grid min-h-56 place-items-center px-8 text-center">
@@ -982,7 +1104,6 @@ export function NinaPlanner() {
                   taskDone={taskDone}
                   taskTotal={taskTotal}
                   teamMembers={teamMembers}
-                  setTeamMembers={setTeamMembers}
                   stateLog={stateLog}
                   releases={releases}
                   setReleases={setReleases}
@@ -1000,11 +1121,14 @@ export function NinaPlanner() {
             ) : (
               <BoardView
                 projects={filtered}
+                onTeamChange={updateProjectTeamForProject}
                 selectProject={(id) => {
                   selectProject(id);
                   setView('list');
                 }}
               />
+            )}
+              </>
             )}
           </section>
         </div>
@@ -1062,15 +1186,6 @@ export function NinaPlanner() {
                   </select>
                 </label>
               </div>
-              <label className="grid gap-1.5 text-xs font-bold">
-                Partner
-                <Input
-                  value={newProjectClient}
-                  onChange={(event) => setNewProjectClient(event.target.value)}
-                  placeholder="pl. Partner 09"
-                  className="h-10 font-normal"
-                />
-              </label>
             </div>
             <DialogFooter>
               <Button
@@ -1084,6 +1199,99 @@ export function NinaPlanner() {
                 Projekt létrehozása
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">
+                Projektsablonok
+              </DialogTitle>
+              <DialogDescription>
+                Demó sablonok létrehozása és projekt indítása előkészített
+                munkarészekkel.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-2 lg:grid-cols-[1fr_1fr]">
+              <section className="space-y-3">
+                <h3 className="text-sm font-black">Meglévő sablonok</h3>
+                {templates.map((template) => (
+                  <article
+                    key={template.id}
+                    className="rounded-xl border border-border bg-card p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold">{template.name}</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {template.team} · {template.items.length} munkarész
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startProjectFromTemplate(template)}
+                      >
+                        Projekt
+                      </Button>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {template.items.map((item) => (
+                        <Badge
+                          key={item}
+                          variant="outline"
+                          className="text-[10px]"
+                        >
+                          {item}
+                        </Badge>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </section>
+              <section className="rounded-xl border border-primary/25 bg-primary/[.05] p-4">
+                <h3 className="text-sm font-black">Új sablon</h3>
+                <div className="mt-3 space-y-3">
+                  <label className="grid gap-1.5 text-xs font-bold">
+                    Sablon neve
+                    <Input
+                      value={templateName}
+                      onChange={(event) => setTemplateName(event.target.value)}
+                      placeholder="pl. Kiviteli tervcsomag"
+                      className="h-10 font-normal"
+                    />
+                  </label>
+                  <label className="grid gap-1.5 text-xs font-bold">
+                    Alap csapat
+                    <select
+                      value={templateTeam}
+                      onChange={(event) => setTemplateTeam(event.target.value)}
+                      className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
+                    >
+                      {teamOptions.map((team) => (
+                        <option key={team}>{team}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-1.5 text-xs font-bold">
+                    Munkarészek
+                    <Textarea
+                      value={templateItems}
+                      onChange={(event) => setTemplateItems(event.target.value)}
+                      className="min-h-36 font-normal"
+                    />
+                  </label>
+                  <Button
+                    onClick={createTemplate}
+                    disabled={!templateName.trim()}
+                    className="w-full"
+                  >
+                    <Plus />
+                    Sablon létrehozása
+                  </Button>
+                </div>
+              </section>
+            </div>
           </DialogContent>
         </Dialog>
         <Dialog open={newTaskOpen} onOpenChange={setNewTaskOpen}>
@@ -1175,7 +1383,6 @@ function ProjectDetail({
   taskDone,
   taskTotal,
   teamMembers,
-  setTeamMembers,
   stateLog,
   releases,
   setReleases,
@@ -1200,7 +1407,6 @@ function ProjectDetail({
   taskDone: number;
   taskTotal: number;
   teamMembers: TeamMember[];
-  setTeamMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
   stateLog: StateLogEntry[];
   releases: ReleaseEntry[];
   setReleases: React.Dispatch<React.SetStateAction<ReleaseEntry[]>>;
@@ -1241,15 +1447,16 @@ function ProjectDetail({
               <Badge className="h-6 rounded-md bg-primary/15 text-primary">
                 {project.code}
               </Badge>
-              <Badge variant="outline" className="h-6 rounded-md">
-                {project.team}
-              </Badge>
+              <TeamSelectPill
+                value={project.team}
+                onChange={onProjectTeamChange}
+              />
             </div>
             <h2 className="truncate text-xl font-black sm:text-2xl">
               {project.name}
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              {project.client} · Ajánlat: {project.offer}
+              Ajánlat: {project.offer}
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -1313,7 +1520,6 @@ function ProjectDetail({
           <TeamTab
             project={project}
             members={teamMembers}
-            setMembers={setTeamMembers}
             onProjectTeamChange={onProjectTeamChange}
             onProjectMembersChange={onProjectMembersChange}
           />
@@ -1852,9 +2058,11 @@ function ActivityTab({
 function BoardView({
   projects,
   selectProject,
+  onTeamChange,
 }: {
   projects: Project[];
   selectProject: (id: number) => void;
+  onTeamChange: (projectId: number, team: string) => void;
 }) {
   const columns = projectStateOptions;
   return (
@@ -1875,9 +2083,16 @@ function BoardView({
               </div>
               <div className="space-y-2">
                 {items.map((project) => (
-                  <button
+                  <article
                     key={project.id}
                     onClick={() => selectProject(project.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        selectProject(project.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                     className="w-full rounded-xl border border-border bg-card p-3 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:border-primary/40"
                   >
                     <span
@@ -1888,8 +2103,14 @@ function BoardView({
                       {project.name}
                     </p>
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      {project.code} · {project.team}
+                      {project.code}
                     </p>
+                    <div className="mt-3">
+                      <TeamSelectPill
+                        value={project.team}
+                        onChange={(team) => onTeamChange(project.id, team)}
+                      />
+                    </div>
                     <div className="my-3 h-1 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full"
@@ -1906,7 +2127,7 @@ function BoardView({
                         {project.due}
                       </span>
                     </div>
-                  </button>
+                  </article>
                 ))}
                 {items.length === 0 && (
                   <div className="grid min-h-32 place-items-center rounded-lg border border-dashed border-border text-[10px] text-muted-foreground">

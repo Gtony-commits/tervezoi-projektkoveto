@@ -31,6 +31,7 @@ export type TeamMember = {
   role: TeamRole;
   team: string;
   discipline: string;
+  permissions: string;
   capacity: number;
   status: 'Szabad' | 'Terhelt' | 'Foglalt';
 };
@@ -87,6 +88,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'PM',
     team: 'B csapat',
     discipline: 'Erősáram',
+    permissions: 'Projekt létrehozás, kiadás jóváhagyás',
     capacity: 72,
     status: 'Terhelt',
   },
@@ -97,6 +99,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező',
     team: 'B csapat',
     discipline: 'Világítás',
+    permissions: 'Feladat szerkesztés, kommentelés',
     capacity: 58,
     status: 'Szabad',
   },
@@ -107,6 +110,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező gyakornok',
     team: 'B csapat',
     discipline: 'Dokumentáció',
+    permissions: 'Dokumentáció szerkesztés',
     capacity: 64,
     status: 'Szabad',
   },
@@ -117,6 +121,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező',
     team: 'A csapat',
     discipline: 'Villámvédelem',
+    permissions: 'Ellenőrzés, státusz módosítás',
     capacity: 81,
     status: 'Foglalt',
   },
@@ -127,6 +132,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'Épületvillamossági tervező',
     team: 'C csapat',
     discipline: 'Elosztók',
+    permissions: 'Feladat szerkesztés, kiadás előkészítés',
     capacity: 45,
     status: 'Szabad',
   },
@@ -137,6 +143,7 @@ export const initialTeamMembers: TeamMember[] = [
     role: 'PM',
     team: 'Közös',
     discipline: 'Minőségellenőrzés',
+    permissions: 'Ellenőrzés, kiadás zárolás',
     capacity: 69,
     status: 'Terhelt',
   },
@@ -311,13 +318,11 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
 export function TeamTab({
   project,
   members,
-  setMembers,
   onProjectTeamChange,
   onProjectMembersChange,
 }: {
   project: ProjectLike;
   members: TeamMember[];
-  setMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
   onProjectTeamChange: (team: string) => void;
   onProjectMembersChange: (initials: string[]) => void;
 }) {
@@ -344,22 +349,6 @@ export function TeamTab({
     onProjectMembersChange(
       project.initials.filter((current) => current !== initials),
     );
-  const updateMember = (id: string, patch: Partial<TeamMember>) =>
-    setMembers((current) =>
-      current.map((member) => (member.id === id ? { ...member, ...patch } : member)),
-    );
-  const updateInitials = (member: TeamMember, value: string) => {
-    const nextInitials = value.trim().toUpperCase().slice(0, 4);
-    if (!nextInitials) return;
-    updateMember(member.id, { initials: nextInitials });
-    if (project.initials.includes(member.initials)) {
-      onProjectMembersChange(
-        project.initials.map((initials) =>
-          initials === member.initials ? nextInitials : initials,
-        ),
-      );
-    }
-  };
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -368,7 +357,8 @@ export function TeamTab({
           <div>
             <h3 className="text-sm font-black">Projektcsapat összeállítása</h3>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Válts csapatot, majd szerkeszd a tagokat és a projekt tagságát.
+              Itt csak a projekt tagságát állítod; a tervezők adatai külön
+              lapon szerkeszthetők.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -432,11 +422,14 @@ export function TeamTab({
                   Le
                 </Button>
               </div>
-              <EditableMemberRow
-                member={member}
-                updateMember={updateMember}
-                updateInitials={updateInitials}
-              />
+              <div className="grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-3">
+                <span>{member.role}</span>
+                <span>{member.discipline}</span>
+                <span>{member.capacity}% kapacitás</span>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Jogosultság: {member.permissions}
+              </p>
             </article>
           ))}
           {assigned.length === 0 && (
@@ -466,6 +459,9 @@ export function TeamTab({
                     <p className="mt-1 text-[10px] text-muted-foreground">
                       {member.role} · {member.capacity}% kapacitás
                     </p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      {member.permissions}
+                    </p>
                   </div>
                   <Badge className={statusTone(member.status)}>
                     {member.status}
@@ -480,14 +476,6 @@ export function TeamTab({
                   <UserPlus />
                   Hozzáadás
                 </Button>
-                <div className="mt-3 border-t border-border/70 pt-3">
-                  <EditableMemberRow
-                    member={member}
-                    compact
-                    updateMember={updateMember}
-                    updateInitials={updateInitials}
-                  />
-                </div>
               </div>
             ))}
             {available.length === 0 && (
@@ -517,6 +505,173 @@ export function TeamTab({
           </div>
         </section>
       </aside>
+    </div>
+  );
+}
+
+export function DesignersDirectory({
+  members,
+  setMembers,
+}: {
+  members: TeamMember[];
+  setMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
+}) {
+  const [newName, setNewName] = useState('');
+  const [newInitials, setNewInitials] = useState('');
+  const [newTeam, setNewTeam] = useState('A csapat');
+  const [newRole, setNewRole] = useState<TeamRole>(
+    'Épületvillamossági tervező',
+  );
+  const [newPermissions, setNewPermissions] = useState(
+    'Feladat szerkesztés, kommentelés',
+  );
+
+  const updateMember = (id: string, patch: Partial<TeamMember>) =>
+    setMembers((current) =>
+      current.map((member) =>
+        member.id === id ? { ...member, ...patch } : member,
+      ),
+    );
+  const updateInitials = (member: TeamMember, value: string) => {
+    const nextInitials = value.trim().toUpperCase().slice(0, 4);
+    if (nextInitials) updateMember(member.id, { initials: nextInitials });
+  };
+  const addMember = () => {
+    if (!newName.trim() || !newInitials.trim()) return;
+    setMembers((current) => [
+      {
+        id: `member-${Date.now()}`,
+        initials: newInitials.trim().toUpperCase().slice(0, 4),
+        name: newName.trim(),
+        role: newRole,
+        team: newTeam,
+        discipline: 'Épületvillamosság',
+        permissions: newPermissions,
+        capacity: 50,
+        status: 'Szabad',
+      },
+      ...current,
+    ]);
+    setNewName('');
+    setNewInitials('');
+  };
+  const removeMember = (id: string) =>
+    setMembers((current) => current.filter((member) => member.id !== id));
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h3 className="text-sm font-black">Új tervező</h3>
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-[90px_1fr] gap-2">
+            <label className="grid gap-1.5 text-xs font-bold">
+              Jel
+              <Input
+                value={newInitials}
+                onChange={(event) => setNewInitials(event.target.value)}
+                placeholder="T13"
+                className="h-10 font-normal"
+              />
+            </label>
+            <label className="grid gap-1.5 text-xs font-bold">
+              Név
+              <Input
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+                placeholder="Tervező 13"
+                className="h-10 font-normal"
+              />
+            </label>
+          </div>
+          <label className="grid gap-1.5 text-xs font-bold">
+            Role
+            <select
+              value={newRole}
+              onChange={(event) => setNewRole(event.target.value as TeamRole)}
+              className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
+            >
+              {teamRoleOptions.map((role) => (
+                <option key={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-xs font-bold">
+            Csapat
+            <select
+              value={newTeam}
+              onChange={(event) => setNewTeam(event.target.value)}
+              className="h-10 rounded-lg border border-input bg-background px-3 font-normal outline-none"
+            >
+              {teamNames.map((team) => (
+                <option key={team}>{team}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-xs font-bold">
+            Jogosultságok
+            <Textarea
+              value={newPermissions}
+              onChange={(event) => setNewPermissions(event.target.value)}
+              className="min-h-20 font-normal"
+            />
+          </label>
+          <Button
+            onClick={addMember}
+            disabled={!newName.trim() || !newInitials.trim()}
+            className="w-full"
+          >
+            <UserPlus />
+            Tervező hozzáadása
+          </Button>
+        </div>
+      </section>
+      <section className="grid gap-4 xl:grid-cols-2">
+        {teamNames.map((team) => {
+          const teamMembers = members.filter((member) => member.team === team);
+          return (
+            <div key={team} className="rounded-xl border border-border bg-card p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-black">{team}</h3>
+                <Badge className="bg-primary/15 text-primary">
+                  {teamMembers.length} fő
+                </Badge>
+              </div>
+              <div className="space-y-3">
+                {teamMembers.map((member) => (
+                  <article
+                    key={member.id}
+                    className="rounded-xl border border-border bg-background/35 p-3"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-black">
+                        {member.initials} · {member.name}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => removeMember(member.id)}
+                        aria-label="Tervező törlése"
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                    <EditableMemberRow
+                      member={member}
+                      updateMember={updateMember}
+                      updateInitials={updateInitials}
+                    />
+                  </article>
+                ))}
+                {teamMembers.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-border p-5 text-center text-xs text-muted-foreground">
+                    Nincs még tervező ebben a csapatban.
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </section>
     </div>
   );
 }
@@ -558,6 +713,16 @@ function EditableMemberRow({
             updateMember(member.id, { discipline: event.target.value })
           }
           className="h-8 text-xs font-semibold"
+        />
+      </label>
+      <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground sm:col-span-3">
+        Jogosultságok
+        <Textarea
+          value={member.permissions}
+          onChange={(event) =>
+            updateMember(member.id, { permissions: event.target.value })
+          }
+          className="min-h-16 text-xs font-semibold"
         />
       </label>
       <label className="grid gap-1 text-[10px] font-bold uppercase text-muted-foreground sm:col-span-2">
